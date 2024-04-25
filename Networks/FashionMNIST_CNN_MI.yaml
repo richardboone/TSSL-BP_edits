@@ -3,10 +3,10 @@ Network:
   batch_size: 50
   n_steps: 5
   dataset: "FashionMNIST"
-  rule: "TSSLBP"
+  rule: "TSSLBP_MI"
   data_path: "/data/rboone/datasets/mnist"
   lr: 0.0005
-  loss: "kernel"
+  loss: "count"
   n_class: 10
   desired_count: 4
   undesired_count: 1
