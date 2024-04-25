@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.nn.init as init
 import functions.tsslbp as tsslbp
+import functions.tsslbp_mi as tsslbp_mi
 import global_v as glv
 
 
@@ -73,11 +74,15 @@ class ConvLayer(nn.Conv3d):
         super(ConvLayer, self).__init__(in_features, out_features, kernel, stride, padding, dilation, groups,
                                         bias=False)
         # nn.init.kaiming_normal_(self.weight)
+
+
         self.weight = torch.nn.Parameter(weight_scale * self.weight.cuda(), requires_grad=True)
 
         self.in_shape = in_shape
         self.out_shape = [out_features, int((in_shape[1]+2*padding[0]-kernel[0])/stride[0]+1),
                           int((in_shape[2]+2*padding[1]-kernel[1])/stride[1]+1)]
+        if (self.network_config["rule"] == "TSSLBP_MI"):
+            self.membrane_initialization = torch.nn.Parameter(weight_scale * torch.rand(self.out_shape).cuda(), requires_grad=True)
         print(self.name)
         print(self.in_shape)
         print(self.out_shape)
@@ -89,11 +94,18 @@ class ConvLayer(nn.Conv3d):
                         self.stride, self.padding, self.dilation, self.groups)
 
     def get_parameters(self):
-        return self.weight
+        if (self.network_config["rule"] == "TSSLBP"):
+            return [self.weight]
+        elif self.network_config["rule"] == "TSSLBP_MI":
+            return [self.weight, self.membrane_initialization]
+
 
     def forward_pass(self, x, epoch):
         y = self.forward(x)
-        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        if (self.network_config["rule"] == "TSSLBP"):
+            y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        elif (self.network_config["rule"] == "TSSLBP_MI"):
+            y = tsslbp_mi.TSSLBP_MI.apply(y, self.membrane_initialization, self.network_config, self.layer_config)
         return y
 
     def weight_clipper(self):

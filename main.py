@@ -12,15 +12,16 @@ from utils import EarlyStopping
 import functions.loss_f as loss_f
 import numpy as np
 from datetime import datetime
-import pycuda.driver as cuda
 from torch.nn.utils import clip_grad_norm_
 from torch.nn.utils import clip_grad_value_
 import global_v as glv
+import wandb
+import time
 
-from sklearn.metrics import confusion_matrix
-import pandas as pd
-import seaborn as sn
-import matplotlib.pyplot as plt
+# from sklearn.metrics import confusion_matrix
+# import pandas as pd
+# import seaborn as sn
+# import matplotlib.pyplot as plt
 import argparse
 
 
@@ -53,7 +54,7 @@ def train(network, trainloader, opti, epoch, states, network_config, layers_conf
     for batch_idx, (inputs, labels) in enumerate(trainloader):
         start_time = datetime.now()
         targets = torch.zeros(labels.shape[0], n_class, 1, 1, n_steps).cuda() 
-        if network_config["rule"] == "TSSLBP":
+        if network_config["rule"] in ["TSSLBP", "TSSLBP_MI"]:
             if len(inputs.shape) < 5:
                 inputs = inputs.unsqueeze_(-1).repeat(1, 1, 1, 1, n_steps)
             # forward pass
@@ -104,13 +105,15 @@ def train(network, trainloader, opti, epoch, states, network_config, layers_conf
         states.training.lossSum += loss.cpu().data.item() 
         states.print(epoch, batch_idx, (datetime.now() - time).total_seconds())
 
+    
     total_accuracy = correct / total
     total_loss = train_loss / total
     if total_accuracy > max_accuracy:
         max_accuracy = total_accuracy
     if min_loss > total_loss:
         min_loss = total_loss
-
+    dataset = network_config["dataset"]
+    wandb.log({f"{dataset}/train/{network_config['rule']}_loss":total_loss, f"{dataset}/train/{network_config['rule']}_acc":total_accuracy,f"{dataset}/train/{network_config['rule']}_min_loss":min_loss, f"{dataset}/train/{network_config['rule']}_max_acc":max_accuracy})
     logging.info("Train Accuracy: %.3f (%.3f). Loss: %.3f (%.3f)\n", 100. * total_accuracy, 100 * max_accuracy, total_loss, min_loss)
 
 
@@ -127,7 +130,7 @@ def test(network, testloader, epoch, states, network_config, layers_config, earl
     y_true = []
     des_str = "Testing @ epoch " + str(epoch)
     for batch_idx, (inputs, labels) in enumerate(testloader):
-        if network_config["rule"] == "TSSLBP":
+        if network_config["rule"] in ["TSSLBP", "TSSLBP_MI"]:
             if len(inputs.shape) < 5:
                 inputs = inputs.unsqueeze_(-1).repeat(1, 1, 1, 1, n_steps)
             # forward pass
@@ -154,14 +157,16 @@ def test(network, testloader, epoch, states, network_config, layers_config, earl
         best_acc = test_accuracy
         y_pred = np.concatenate(y_pred)
         y_true = np.concatenate(y_true)
-        cf = confusion_matrix(y_true, y_pred, labels=np.arange(n_class))
-        df_cm = pd.DataFrame(cf, index = [str(ind*25) for ind in range(n_class)], columns=[str(ind*25) for ind in range(n_class)])
-        plt.figure()
-        sn.heatmap(df_cm, annot=True)
-        plt.savefig("confusion_matrix.png")
-        plt.close()
+        # cf = confusion_matrix(y_true, y_pred, labels=np.arange(n_class))
+        # df_cm = pd.DataFrame(cf, index = [str(ind*25) for ind in range(n_class)], columns=[str(ind*25) for ind in range(n_class)])
+        # plt.figure()
+        # sn.heatmap(df_cm, annot=True)
+        # plt.savefig("confusion_matrix.png")
+        # plt.close()
 
     logging.info("Train Accuracy: %.3f (%.3f).\n", 100. * test_accuracy, 100 * best_acc)
+    dataset = network_config["dataset"]
+    wandb.log({f"{dataset}/test/{network_config['rule']}_acc":test_accuracy,f"{dataset}/test/{network_config['rule']}_max_acc":best_acc})
     # Save checkpoint.
     acc = 100. * correct / total
     early_stopping(acc, network, epoch)
@@ -222,7 +227,15 @@ if __name__ == '__main__':
     else:
         raise Exception('Unrecognized dataset name.')
     logging.info("dataset loaded")
-    
+    ofid = f"{params['Network']['dataset']}_{params['Network']['rule']}_{time.strftime('%Y%m%d-%H%M%S')}"
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="MI_TEST",
+        
+        # track hyperparameters and run metadata
+        config=params,
+        id=f"{ofid}"
+    )
     net = cnns.Network(params['Network'], params['Layers'], list(train_loader.dataset[0][0].shape)).cuda()
     
     if args.checkpoint is not None:
@@ -232,6 +245,7 @@ if __name__ == '__main__':
     
     error = loss_f.SpikeLoss(params['Network']).cuda()
     
+    print(net.get_parameters())
     optimizer = torch.optim.AdamW(net.get_parameters(), lr=params['Network']['lr'], betas=(0.9, 0.999))
     
     best_acc = 0
@@ -251,3 +265,4 @@ if __name__ == '__main__':
         #     break
     
     logging.info("Best Accuracy: %.3f, at epoch: %d \n", best_acc, best_epoch)
+    wandb.finish()

@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.nn.init as init
 import functions.tsslbp as tsslbp
+import functions.tsslbp_mi as tsslbp_mi
 import global_v as glv
 
 
@@ -40,6 +41,8 @@ class LinearLayer(nn.Linear):
 
         nn.init.kaiming_normal_(self.weight)
         self.weight = torch.nn.Parameter(weight_scale * self.weight.cuda(), requires_grad=True)
+        if (self.network_config["rule"] == "TSSLBP_MI"):
+            self.membrane_initialization = torch.nn.Parameter(weight_scale * torch.rand(self.out_shape).cuda(), requires_grad=True)
         
         print("linear")
         print(self.name)
@@ -60,11 +63,17 @@ class LinearLayer(nn.Linear):
 
     def forward_pass(self, x, epoch):
         y = self.forward(x)
-        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        if (self.network_config["rule"] == "TSSLBP"):
+            y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        elif (self.network_config["rule"] == "TSSLBP_MI"):
+            y = tsslbp_mi.TSSLBP_MI.apply(y, self.membrane_initialization, self.network_config, self.layer_config)
         return y
 
     def get_parameters(self):
-        return self.weight
+        if (self.network_config["rule"] == "TSSLBP"):
+            return [self.weight]
+        elif self.network_config["rule"] == "TSSLBP_MI":
+            return [self.weight, self.membrane_initialization]
 
     def weight_clipper(self):
         w = self.weight.data

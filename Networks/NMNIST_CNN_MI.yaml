@@ -3,7 +3,7 @@ Network:
   batch_size: 50
   n_steps: 30
   dataset: "NMNIST_Spiking"
-  rule: "TSSLBP"
+  rule: "TSSLBP_MI"
   data_path: "/data/rboone/datasets/2312_3000_stable"
   lr: 0.0005
   loss: "count"

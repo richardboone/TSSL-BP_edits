@@ -21,11 +21,11 @@ class Network(nn.Module):
             if c['type'] == 'conv':
                 self.layers.append(conv.ConvLayer(network_config, c, key, input_shape))
                 input_shape = self.layers[-1].out_shape
-                parameters.append(self.layers[-1].get_parameters())
+                parameters.extend(self.layers[-1].get_parameters())
             elif c['type'] == 'linear':
                 self.layers.append(linear.LinearLayer(network_config, c, key, input_shape))
                 input_shape = self.layers[-1].out_shape
-                parameters.append(self.layers[-1].get_parameters())
+                parameters.extend(self.layers[-1].get_parameters())
             elif c['type'] == 'pooling':
                 self.layers.append(pooling.PoolLayer(network_config, c, key, input_shape))
                 input_shape = self.layers[-1].out_shape
@@ -45,7 +45,7 @@ class Network(nn.Module):
             if l.type == "dropout":
                 if is_train:
                     spikes = l(spikes)
-            elif self.network_config["rule"] == "TSSLBP":
+            elif self.network_config["rule"] in  ["TSSLBP", "TSSLBP_MI"]:
                 spikes = l.forward_pass(spikes, epoch)
             else:
                 raise Exception('Unrecognized rule type. It is: {}'.format(self.network_config['rule']))
