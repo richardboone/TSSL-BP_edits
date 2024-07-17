@@ -60,15 +60,15 @@ class TSSLBP(torch.autograd.Function):
         for t in range(n_steps-1):
             syn_a[..., t+1] = syn_a[..., t] - syn_a[..., t] / tau_s 
         syn_a /= tau_s
-        # added the definition of syn_a in here, maybe should make into function? no fucking idea
+        # added the definition of syn_a in here, maybe should make into function? no idea
 
         th = 1/(4 * tau_s)
 
         grad = torch.zeros_like(grad_delta)
         # deleted glv in front of syn_a. assumed that repeat doesn't get affected by glv so didn't touch
-        syn_a = syn_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
         partial_a = syn_a/(-tau_s)
         partial_a = partial_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
+        syn_a = syn_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
 
         o = torch.zeros(shape[0], shape[1], shape[2], shape[3]).cuda()
         
