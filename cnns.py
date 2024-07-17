@@ -5,7 +5,6 @@ import layers.pooling as pooling
 import layers.dropout as dropout
 import layers.linear as linear
 import functions.loss_f as f
-# import global_v as glv
 
 
 class Network(nn.Module):
@@ -14,6 +13,15 @@ class Network(nn.Module):
         self.layers = []
         self.network_config = network_config
         self.layers_config = layers_config
+
+        self.n_steps = self.network_config['n_steps']
+        self.tau_s = self.network_config['tau_s']
+        self.syn_a = torch.zeros(1, 1, 1, 1, self.n_steps).cuda()
+        self.syn_a[..., 0] = 1
+        for t in range(self.n_steps-1):
+            self.syn_a[..., t+1] = self.syn_a[..., t] - self.syn_a[..., t] / self.tau_s 
+        self.syn_a /= self.tau_s
+
         parameters = []
         print("Network Structure:")
         for key in layers_config:
@@ -46,7 +54,7 @@ class Network(nn.Module):
                 if is_train:
                     spikes = l(spikes)
             elif self.network_config["rule"] == "TSSLBP":
-                spikes = l.forward_pass(spikes, epoch)
+                spikes = l.forward_pass(spikes, epoch, n_steps, tau_s, syn_a)
             else:
                 raise Exception('Unrecognized rule type. It is: {}'.format(self.network_config['rule']))
         return spikes

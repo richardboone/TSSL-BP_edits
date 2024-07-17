@@ -203,14 +203,9 @@ if __name__ == '__main__':
     cudnn.enabled = True
     torch.cuda.manual_seed_all(args.seed)
     np.random.seed(args.seed)
-    
-    # glv.init(params['Network']['n_steps'], params['Network']['tau_s'] )
-    
+        
     n_steps = params['Network']['n_steps']
     tau_s = params['Network']['tau_s']
-
-    
-    # locally declaring n_steps and tau_s to calculate syn_a. not used elsewhere tho so confused
 
     logging.info("dataset loaded")
     if params['Network']['dataset'] == "MNIST":

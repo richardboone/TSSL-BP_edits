@@ -1,7 +1,5 @@
 import torch
 import torch.nn.functional as f
-# import global_v as glv -- doesn't use glv? unless network config is like sussy idk....
-
 
 def psp(inputs, network_config):
     shape = inputs.shape
