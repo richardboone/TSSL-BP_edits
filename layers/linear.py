@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.nn.init as init
 import functions.tsslbp as tsslbp
-import global_v as glv
+# import global_v as glv
 
 
 class LinearLayer(nn.Linear):

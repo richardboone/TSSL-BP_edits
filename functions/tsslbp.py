@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as f
 from time import time 
-import global_v as glv
+# import global_v as glv
 
 
 class TSSLBP(torch.autograd.Function): 
@@ -41,6 +41,7 @@ class TSSLBP(torch.autograd.Function):
         outputs = torch.stack(outputs, dim = 4)
         syns_posts = torch.stack(syns_posts, dim = 4)
         ctx.save_for_backward(mem_updates, outputs, mems, syns_posts, torch.tensor([threshold, tau_s, theta_m]))
+        # idt i have to do anything here? unless im stupid. maybe save for backward doesn't save it and needs a seperate variable outside eof the scope? help
 
         return syns_posts
 
@@ -52,13 +53,21 @@ class TSSLBP(torch.autograd.Function):
         threshold = others[0].item()
         tau_s = others[1].item()
         theta_m = others[2].item()
+        
+        # must be after definition of tau and nsteps
+        syn_a = torch.zeros(1, 1, 1, 1, n_steps).cuda()
+        syn_a[..., 0] = 1
+        for t in range(n_steps-1):
+            syn_a[..., t+1] = syn_a[..., t] - syn_a[..., t] / tau_s 
+        syn_a /= tau_s
+        # added the definition of syn_a in here, maybe should make into function? no fucking idea
 
         th = 1/(4 * tau_s)
 
         grad = torch.zeros_like(grad_delta)
-
-        syn_a = glv.syn_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
-        partial_a = glv.syn_a/(-tau_s)
+        # deleted glv in front of syn_a. assumed that repeat doesn't get affected by glv so didn't touch
+        syn_a = syn_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
+        partial_a = syn_a/(-tau_s)
         partial_a = partial_a.repeat(shape[0], shape[1], shape[2], shape[3], 1)
 
         o = torch.zeros(shape[0], shape[1], shape[2], shape[3]).cuda()

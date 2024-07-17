@@ -5,7 +5,7 @@ import layers.pooling as pooling
 import layers.dropout as dropout
 import layers.linear as linear
 import functions.loss_f as f
-import global_v as glv
+# import global_v as glv
 
 
 class Network(nn.Module):

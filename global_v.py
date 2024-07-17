@@ -14,3 +14,4 @@ def init(n_t, ts):
     for t in range(n_steps-1):
         syn_a[..., t+1] = syn_a[..., t] - syn_a[..., t] / tau_s 
     syn_a /= tau_s
+# basically sets n_steps and tau_s and then calculates syn_a based on n_steps and tau_s

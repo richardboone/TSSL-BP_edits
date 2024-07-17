@@ -15,7 +15,7 @@ from datetime import datetime
 import pycuda.driver as cuda
 from torch.nn.utils import clip_grad_norm_
 from torch.nn.utils import clip_grad_value_
-import global_v as glv
+# import global_v as glv
 
 from sklearn.metrics import confusion_matrix
 import pandas as pd
@@ -204,8 +204,14 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(args.seed)
     np.random.seed(args.seed)
     
-    glv.init(params['Network']['n_steps'], params['Network']['tau_s'] )
+    # glv.init(params['Network']['n_steps'], params['Network']['tau_s'] )
     
+    n_steps = params['Network']['n_steps']
+    tau_s = params['Network']['tau_s']
+
+    
+    # locally declaring n_steps and tau_s to calculate syn_a. not used elsewhere tho so confused
+
     logging.info("dataset loaded")
     if params['Network']['dataset'] == "MNIST":
         data_path = os.path.expanduser(params['Network']['data_path'])
