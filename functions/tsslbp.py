@@ -7,7 +7,7 @@ from time import time
 
 class TSSLBP(torch.autograd.Function): 
     @staticmethod
-    def forward(ctx, inputs, network_config, layer_config):
+    def forward(ctx, inputs, network_config, layer_config, syn_a):
         shape = inputs.shape
         n_steps = shape[4] 
         theta_m = 1/network_config['tau_m']
@@ -40,26 +40,18 @@ class TSSLBP(torch.autograd.Function):
         mem_updates = torch.stack(mem_updates, dim = 4)
         outputs = torch.stack(outputs, dim = 4)
         syns_posts = torch.stack(syns_posts, dim = 4)
-        ctx.save_for_backward(mem_updates, outputs, mems, syns_posts, torch.tensor([threshold, tau_s, theta_m]))
+        ctx.save_for_backward(mem_updates, outputs, mems, syns_posts, syn_a, torch.tensor([threshold, tau_s, theta_m]))
 
         return syns_posts
 
     @staticmethod
     def backward(ctx, grad_delta):
-        (delta_u, outputs, u, syns, others) = ctx.saved_tensors
+        (delta_u, outputs, u, syns, syn_a, others) = ctx.saved_tensors
         shape = grad_delta.shape
         n_steps = shape[4]
         threshold = others[0].item()
         tau_s = others[1].item()
         theta_m = others[2].item()
-        
-        # must be after definition of tau and nsteps
-        # syn_a = torch.zeros(1, 1, 1, 1, n_steps).cuda()
-        # syn_a[..., 0] = 1
-        # for t in range(n_steps-1):
-        #     syn_a[..., t+1] = syn_a[..., t] - syn_a[..., t] / tau_s 
-        # syn_a /= tau_s
-        # do i j need to put the first part in initialization? because the loop has to run everytime anyway
 
         th = 1/(4 * tau_s)
 
@@ -106,5 +98,5 @@ class TSSLBP(torch.autograd.Function):
 
             grad[..., t] = grad_tmp
 
-        return grad, None, None
+        return grad, None, None, None
     

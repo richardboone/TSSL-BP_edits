@@ -84,7 +84,7 @@ class PoolLayer(nn.Conv3d):
     def get_parameters(self):
         return self.weight
 
-    def forward_pass(self, x, epoch):
+    def forward_pass(self, x, epoch, n_steps, tau_s, syn_a):
         y1 = self.forward(x)
         return y1
 

@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.nn.init as init
 import functions.tsslbp as tsslbp
-# import global_v as glv
 
 
 class ConvLayer(nn.Conv3d):
@@ -91,9 +90,9 @@ class ConvLayer(nn.Conv3d):
     def get_parameters(self):
         return self.weight
 
-    def forward_pass(self, x, epoch):
+    def forward_pass(self, x, epoch, n_steps, tau_s, syn_a):
         y = self.forward(x)
-        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config, syn_a)
         return y
 
     def weight_clipper(self):

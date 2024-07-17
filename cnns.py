@@ -47,6 +47,9 @@ class Network(nn.Module):
     def forward(self, spike_input, epoch, is_train):
         spikes = f.psp(spike_input, self.network_config)
         skip_spikes = {}
+        n_steps = self.n_steps
+        tau_s = self.tau_s
+        syn_a = self.syn_a
         assert self.network_config['model'] == "LIF"
         
         for l in self.layers:

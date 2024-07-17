@@ -58,9 +58,9 @@ class LinearLayer(nn.Linear):
         y = y.view(y.shape[0], y.shape[1], 1, 1, y.shape[2])
         return y
 
-    def forward_pass(self, x, epoch):
+    def forward_pass(self, x, epoch, n_steps, tau_s, syn_a):
         y = self.forward(x)
-        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config)
+        y = tsslbp.TSSLBP.apply(y, self.network_config, self.layer_config, syn_a)
         return y
 
     def get_parameters(self):
